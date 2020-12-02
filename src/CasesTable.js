@@ -9,23 +9,6 @@ import TableRow from '@material-ui/core/TableRow';
 import Typography from '@material-ui/core/Typography';
 import Title from './Title';
 
-// Generate Order Data
-function createData(id, date, name, location, age, status) {
-  return { id, date, name, location, age, status };
-}
-
-const rows = [
-  createData(0, '16 Mar, 2019', 'Elvis Presley', 'Tupelo, MS', '29', 'Confirmed'),
-  createData(1, '16 Mar, 2019', 'Paul McCartney', 'London, UK', '59', 'Potential'),
-  createData(2, '16 Mar, 2019', 'Tom Scholz', 'Boston, MA', '18', 'Dead'),
-  createData(3, '16 Mar, 2019', 'Michael Jackson', 'Gary, IN', '53', 'Recovered'),
-  createData(4, '15 Mar, 2019', 'Bruce Springsteen', 'Long Branch, NJ', '15', 'Confirmed'),
-];
-
-function preventDefault(event) {
-  event.preventDefault();
-}
-
 const useStyles = makeStyles((theme) => ({
   greenText: {
     color: 'green'

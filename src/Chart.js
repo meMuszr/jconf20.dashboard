@@ -1,9 +1,7 @@
 import React from "react";
-import { useTheme } from "@material-ui/core/styles";
 import {
   BarChart,
   Bar,
-  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -13,10 +11,6 @@ import {
 } from "recharts";
 import Title from "./Title";
 
-// Generate Sales Data
-function createData(time, total, recovered, dead) {
-  return { time, total, recovered, dead };
-}
 export default function Chart({stats}) {
   const statsAsArray = Object.keys(stats).map(key =>({name: key, amount: stats[key] }));
 

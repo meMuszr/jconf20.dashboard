@@ -24,20 +24,15 @@ export default function Cases({stats}) {
       </Typography>
       <Title>Recovered</Title>
       <Typography component="p" variant="h4">
-        {stats.RECOVERED}
+        {stats?.RECOVERED ?? 0}
       </Typography>
       <Title>Deaths</Title>
       <Typography color="error" component="p" variant="h4">
-        {stats.DEAD}
+        {stats?.DEAD ?? 0}
       </Typography>
       <Typography color="textSecondary" className={classes.depositContext}>
         Potential cases: {stats.POTENTIAL}
       </Typography>
-      <div>
-        <Link color="primary" href="#" onClick={preventDefault}>
-          View balance
-        </Link>
-      </div>
     </React.Fragment>
   );
 }
