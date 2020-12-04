@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import clsx from "clsx";
-import { makeStyles, withStyles } from "@material-ui/core/styles";
+import { webSocket } from "rxjs/webSocket";
+import { map, pluck, take, tap } from "rxjs/operators";
+import { makeStyles } from "@material-ui/core/styles";
 import CssBaseline from "@material-ui/core/CssBaseline";
 import Box from "@material-ui/core/Box";
 import AppBar from "@material-ui/core/AppBar";
@@ -12,23 +14,32 @@ import Paper from "@material-ui/core/Paper";
 import Chart from "./Chart";
 import Cases from "./Cases";
 import CasesTable from "./CasesTable";
-import Websocket from "react-websocket";
 import remove from "lodash/remove";
 import concat from "lodash/concat";
+import { partition } from "lodash";
 
 function Copyright() {
   return (
     <Typography variant="body2" color="textSecondary" align="center">
       {"Made with "}{" "}
-      <Typography display="inline" color="error">
+      <span display="inline" color="error">
         &hearts;
-      </Typography>
+      </span>
       {" in Chicago "}
       {new Date().getFullYear()}
       {"."}
     </Typography>
   );
 }
+const wsSubject = webSocket("ws://localhost:8080/ws/case");
+const wsObservable = wsSubject.pipe(
+  map((data) => {
+    data.testDate = new Date(...[data.testDate]);
+    data.dateOfBirth = new Date(...[data.testDate]);
+    return data;
+  }),
+  tap((data) => console.log(data)),
+);
 
 const drawerWidth = 240;
 
@@ -112,33 +123,49 @@ const useStyles = makeStyles(theme => ({
 }));
 
 export default function Dashboard(props) {
-  const [covidStats, setStats] = useState({});
+  const [covidStats, setStats] = useState({
+    POTENTIAL: 0,
+    CONFIRMED: 0,
+    NEGATIVE: 0,
+    RECOVERED: 0,
+    DEAD: 0,
+  });
   const [recentCases, setRecentCases] = useState([]);
 
-  const handleData = (data) => {
-    const result = JSON.parse(data);
-    result.testDate = new Date(...[result.testDate]);
-    const currentCases = remove(
-      recentCases,
-      (element) => element.id === result.id
-    );
-    const updatedRecentCases = concat(result, currentCases.slice(0, 10));
+  const handleData = useCallback(
+    (data) => {
+      const status= data.status;
+      const caseData = data;
 
-    if (result.status === "DEAD" || result.status === "RECOVERED") {
-      covidStats["CONFIRMED"]--;
-    } else if (result.status === "NEGATIVE" || result.status === "CONFIRMED") {
-      covidStats["POTENTIAL"]--;
-    }
-    covidStats[result.status]++;
-    setStats({ ...covidStats });
-    setRecentCases(updatedRecentCases);
-  };
+      if (status) {
+        setStats((stats) => {
+          if (status === "DEAD" || status === "RECOVERED") {
+            stats["CONFIRMED"]--;
+          } else if (status === "NEGATIVE" || status === "CONFIRMED") {
+            stats["POTENTIAL"]--;
+          }
+          stats[status]++;
+          return stats;
+        });
+      }
+      if (caseData) {
+        setRecentCases((recent) => {
+          return concat(
+            caseData,
+            recent.filter((c) => c.id !== caseData.id)
+          );
+        });
+      }
+    },
+    []
+  );
+
 
   useEffect(() => {
     (async function () {
       const statsResponse = await fetch("http://localhost:8080/api/case/stats");
       const data = await statsResponse.json();
-      setStats(data);
+      setStats((stats) => ({ ...stats, ...data }));
     })();
   }, []);
 
@@ -156,14 +183,16 @@ export default function Dashboard(props) {
     })();
   }, []);
 
+  useEffect(() => {
+    (function () {
+      wsObservable.subscribe(handleData);
+    })();
+  }, []);
+
   const  classes  = useStyles();
   const fixedHeightPaper = clsx(classes.paper, classes.fixedHeight);
   return (
     <div className={classes.root}>
-      <Websocket
-        url="ws://localhost:8080/ws/case"
-        onMessage={handleData.bind(this)}
-      />
       <CssBaseline />
       <AppBar className={clsx(classes.appBar)}>
         <Toolbar className={classes.toolbar}>
